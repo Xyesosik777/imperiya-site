@@ -11,6 +11,8 @@ from database.descriptions import (
     products, general_features,
     LOGIN_HTML, REGISTER_HTML, PROFILE_HTML
 )
+app = Flask(__name__)
+app.secret_key = "dev"
 
 ADMIN_UIDS = {444690}
 
@@ -31,9 +33,6 @@ BTN_STYLE = """
   filter:brightness(1.2);transform:translateY(-2px)}
 .btn.disabled{background:#666;color:#bbb;border:none;cursor:default}
 """
-
-app = Flask(__name__)
-app.secret_key = "dev"
 
 os.makedirs('database', exist_ok=True)
 DB = 'database/users.db'
