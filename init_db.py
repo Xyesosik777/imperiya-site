@@ -8,7 +8,8 @@ columns_to_add = {
     "hwid": "TEXT",
     "subscription_end": "TEXT",
     "role": "TEXT DEFAULT 'player'",
-    "banned": "INTEGER DEFAULT 0"
+    "banned": "INTEGER DEFAULT 0",
+    "avatar_url": "TEXT"
 }
 
 def migrate():
