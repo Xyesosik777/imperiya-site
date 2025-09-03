@@ -8,13 +8,11 @@ class Feature:
         self.title, self.description = title, description
 
 products = [
-    Product("30 дней", "299₽"),
-    Product("Навсегда", "499₽"),
-    Product("Сброс HWID", "249₽"),
-]
-products_beta = [
-    Product("BETA 1.21.4 — 30 дней", "800₽"),
-    Product("BETA 1.21.4 — Навсегда", "1199₽"),
+    Product("30 дней",     "300₽"),
+    Product("Навсегда",    "500₽"),
+    Product("Сброс HWID",  "250₽"),
+    Product("BETA 1.21.4 1 мес.", "799₽"),
+    Product("BETA 1.21.4 Навсегда", "1199₽"),
 ]
 
 general_features = [
@@ -123,18 +121,17 @@ input{flex:1;padding:10px;border:1px solid var(--border);border-radius:12px;back
 {{ bg_style|safe }}{{ btn_style|safe }}
 </style></head><body>
 <div class="container">
-
   <!-- карточка с аватаркой -->
-  <div class="avatar-card">
-    <img class="avatar-img" src="{{ user.avatar_url if user.avatar_url else url_for('static', filename='icon.png') }}" alt="Аватар">
-    <form method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-      <input type="file" name="avatar" accept="image/*" style="display:none" id="avatarInput" onchange="this.form.submit()">
-      <button type="button" class="upload-btn" onclick="document.getElementById('avatarInput').click()">Загрузить аватарку</button>
-      {% if user.avatar_url %}
-        <button type="submit" name="delete_avatar" class="delete-btn">Удалить аватарку</button>
-      {% endif %}
-    </form>
-  </div>
+<div class="avatar-card">
+  <img class="avatar-img" src="{{ user.avatar_url or url_for('static', filename='icon.png') }}" alt="Аватар">
+  <form method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+    <input type="file" name="avatar" accept="image/*" style="display:none" id="avatarInput" onchange="this.form.submit()">
+    <button type="button" class="upload-btn" onclick="document.getElementById('avatarInput').click()">Загрузить аватарку</button>
+    {% if user.avatar_url %}
+      <button type="submit" name="delete_avatar" class="delete-btn">Удалить аватарку</button>
+    {% endif %}
+  </form>
+</div>
 
   <!-- карточка с информацией -->
   <div class="info-card">
@@ -153,17 +150,18 @@ input{flex:1;padding:10px;border:1px solid var(--border);border-radius:12px;back
       <input value="{{ user.subscription_end or '-' }}" readonly>
     </div>
 
-    <!-- Актив. ключ -->
-    <form method="POST" class="row">
-      <span class="label">Актив. ключ</span>
-      <div style="flex:1;display:flex;gap:10px">
-        <input id="activation_key" 
-               name="activation_key" 
-               placeholder="XXXX XXXX XXXX XXXX" 
-               required>
-        <button type="submit" class="btn-small">Активировать</button>
-      </div>
-    </form>
+   
+<!-- Актив. ключ -->
+<form method="POST" class="row">
+  <span class="label">Актив. ключ</span>
+  <div style="flex:1;display:flex;gap:10px">
+    <input id="activation_key" 
+           name="activation_key" 
+           placeholder="XXXX XXXX XXXX XXXX" 
+           required>
+    <button type="submit" class="btn-small">Активировать</button>
+  </div>
+</form>
 
     <a class="back" href="{{ url_for('shop') }}">⬅ На главную</a>
   </div>

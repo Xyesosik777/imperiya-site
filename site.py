@@ -2,10 +2,9 @@ from flask import (
     Flask, render_template_string, request,
     redirect, url_for, session, flash
 )
-import sqlite3, os, random, string
-from datetime import date, timedelta
 from werkzeug.utils import secure_filename
-
+import sqlite3, os
+from datetime import date, timedelta
 from managers.uid_manager  import generate_uid
 from managers.hwid_manager import set_hwid
 
@@ -13,18 +12,6 @@ from database.descriptions import (
     products, general_features,
     LOGIN_HTML, REGISTER_HTML, PROFILE_HTML
 )
-
-import random, string
-
-def generate_key():
-    prefix = "IMPER"
-    # ещё 11 случайных символов (чтобы всего было 16)
-    chars = ''.join(random.choices(string.ascii_uppercase + string.digits, k=11))
-    raw = prefix + chars  # например: IMPERT8F9W0ABC2
-    # разбиваем на куски по 4 символа
-    grouped = ' '.join([raw[i:i+4] for i in range(0, len(raw), 4)])
-    return grouped  # результат: IMPE RABC 1234 XYZZ
-
 app = Flask(__name__)
 app.secret_key = "dev"
 
@@ -63,28 +50,17 @@ def get_db() -> sqlite3.Connection:
         subscription_end TEXT
     )""")
     conn.commit()
-
-    # миграции
+    # миграция: role
     cols = [r[1] for r in conn.execute("PRAGMA table_info(users)")]
-
     if 'role' not in cols:
         conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'player'")
         conn.commit()
-
+    # миграция: banned
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(users)")]
     if 'banned' not in cols:
         conn.execute("ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0")
         conn.commit()
-
-    if 'avatar_url' not in cols:
-        conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
-        conn.commit()
-
-    # ✅ наша миграция на BETA-подписку
-    if 'beta_subscription_end' not in cols:
-        conn.execute("ALTER TABLE users ADD COLUMN beta_subscription_end TEXT")
-        conn.commit()
-
-    # учётная запись admin/admin
+    # учётка admin/admin
     conn.execute("""INSERT OR IGNORE INTO users
                     (username,password,role) VALUES('admin','admin','admin')""")
     conn.commit()
@@ -101,8 +77,8 @@ def shop():
 <!DOCTYPE html><html lang="ru"><head>
 <meta charset="UTF-8"><title>Imperiya</title>
 <style>
-:root{--bg:#1b1d22;--card:#26282e;--border:#474a52;
-      --text:#f1f2f4;--muted:#9c9ea4;--shadow:0 6px 18px #000a}
+ :root{--bg:#1b1d22;--card:#26282e;--border:#474a52;
+       --text:#f1f2f4;--muted:#9c9ea4;--shadow:0 6px 18px #000a}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);}
 .top{position:fixed;top:20px;right:20px;display:flex;gap:12px;z-index:100}
@@ -110,10 +86,16 @@ body{font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);}
   background:var(--card);color:var(--text);font-weight:600;text-decoration:none;transition:.25s}
 .top a:hover{filter:brightness(1.15)}
 h1{margin:90px 0 60px;text-align:center;font-size:3rem;font-weight:800}
-.shop{display:flex;justify-content:center;flex-wrap:wrap;gap:34px;margin-bottom:60px}
-.card{width:260px;padding:28px;border:1px solid var(--border);border-radius:18px;
+.shop{display:flex;justify-content:center;flex-wrap:wrap;gap:34px;margin-bottom:110px}
+.card{width:236px;padding:24px;border:1px solid var(--border);border-radius:18px;
   background:var(--card);text-align:center;transition:.25s}
 .card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.card.beta{background:#2b281e;border:1px solid #6b5f2a}
+.card.beta h2{color:#f1e6a8}
+.card.beta .price{color:#d6c97a}
+.card.beta:hover{box-shadow:0 10px 28px rgba(255,214,96,.25),0 0 14px rgba(255,214,96,.35)}
+.card.beta .btn{background:linear-gradient(120deg,#6b5f2a 0%,#9a8f3d 50%,#6b5f2a 100%);color:#1b1a15;border:none}
+.card.beta .btn:hover{filter:none;transform:translateY(-2px);box-shadow:0 8px 22px rgba(255,214,96,.25),0 0 10px rgba(255,214,96,.35)}
 .card h2{margin-bottom:10px;font-size:1.35rem}
 .price{color:var(--muted);margin-bottom:22px;font-weight:700}
 .section-title{margin:60px 0 40px;font-size:1.8rem;text-align:center;font-weight:700}
@@ -126,19 +108,10 @@ footer{
   text-align:center;
   color:#888;
   font-size:1.05rem;
+  letter-spacing:.5px;
   opacity:.7;
   margin:60px 0 18px 0;
   background:transparent;
-}
-/* 🌟 Стиль для BETA карточек */
-.card.beta-card {
-  border: 1px solid #facc15;      /* жёлтая граница */
-  box-shadow: 0 0 6px #facc15cc;  /* мягкий жёлтый неон */
-  background: #2b2b20;            /* слегка тёмно‑жёлтая подложка */
-}
-.card.beta-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 0 15px #facc15, 0 0 30px #facc15aa;
 }
 #ov{display:none;position:fixed;inset:0;background:#0008;backdrop-filter:blur(3px);z-index:1000}
 #mdl{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);
@@ -164,10 +137,10 @@ footer{
 
 <h1>Imperiya</h1>
 
-<!-- Обычные продукты -->
 <div class="shop">
-{% for p in products if 'BETA' not in p.name %}
-  <div class="card">
+{% for p in products %}
+  {% if loop.index == 4 %}<div style="flex-basis:100%;height:0"></div>{% endif %}
+  <div class="card {{ 'beta' if 'BETA' in p.name or 'Beta' in p.name else '' }}">
     <h2>{{ p.name }}</h2>
     <p class="price">{{ p.price }}</p>
     {% if not session.get('user') %}
@@ -179,31 +152,7 @@ footer{
 {% endfor %}
 </div>
 
-<!-- BETA секция -->
-<h2 class="section-title" style="color:#facc15;text-shadow:0 0 6px #facc15cc;"></h2>
-<div class="shop">
-  <div class="card beta-card">
-    <h2>BETA 1.21.4 1 мес.</h2>
-    <p class="price">799₽</p>
-    {% if not session.get('user') %}
-      <button class="btn" onclick="window.location.href='{{ url_for('register') }}'">Купить</button>
-    {% else %}
-      <button class="btn" onclick="openModal('BETA 1.21.4 1 мес.','799₽')">Купить</button>
-    {% endif %}
-  </div>
-
-  <div class="card beta-card">
-    <h2>BETA 1.21.4 Навсегда</h2>
-    <p class="price">1199₽</p>
-    {% if not session.get('user') %}
-      <button class="btn" onclick="window.location.href='{{ url_for('register') }}'">Купить</button>
-    {% else %}
-      <button class="btn" onclick="openModal('BETA 1.21.4 Навсегда','1199₽')">Купить</button>
-    {% endif %}
-  </div>
-</div>
-
-<!-- блок преимуществ -->
+<!-- Блок преимуществ и заголовок — перед футером -->
 <h2 class="section-title" style="margin-top:60px;">Почему стоит купить именно наш клиент?</h2>
 <div class="features">
 {% for f in general_features %}
@@ -292,17 +241,7 @@ def login():
             if pwd == row['password']:
                 session['user'] = name
                 session['uid']  = row['uid']
-
-                # 👑 Авто-назначение админки по нику
-                if name in ("Chel1k", "Frost"):
-                    session['role'] = 'admin'
-                    conn = get_db()
-                    conn.execute("UPDATE users SET role='admin' WHERE username=?", (name,))
-                    conn.commit()
-                    conn.close()
-                else:
-                    session['role'] = 'admin' if row['uid'] in ADMIN_UIDS else 'player'
-
+                session['role'] = 'admin' if row['uid'] in ADMIN_UIDS else 'player'
                 return redirect('/')
         flash("Неверный логин / пароль")
     return render(LOGIN_HTML)
@@ -315,115 +254,30 @@ def logout():
 def profile():
     if not session.get('user'):
         return redirect('/login')
-
-    conn = get_db()
-    conn.row_factory = sqlite3.Row
-    user = conn.execute(
-        """SELECT uid,username,email,hwid,subscription_end,role,banned,avatar_url 
-           FROM users WHERE username=?""",
-        (session['user'],)
-    ).fetchone()
-
+    conn = get_db(); conn.row_factory = sqlite3.Row
+    user = conn.execute("""SELECT uid,username,email,hwid,subscription_end,role,banned,avatar_url FROM users WHERE username=?""", (session['user'],)).fetchone()
     if request.method == "POST":
-        # загрузка/удаление аватарки
         if "avatar" in request.files:
             avatar = request.files["avatar"]
             if avatar.filename:
-                os.makedirs("static/avatars", exist_ok=True)
                 filename = secure_filename(f"{user['uid']}_{avatar.filename}")
                 avatar_path = os.path.join("static", "avatars", filename)
                 avatar.save(avatar_path)
-                db_path = f"avatars/{filename}"
-                conn.execute("UPDATE users SET avatar_url=? WHERE uid=?", (db_path, user["uid"]))
+                conn.execute("UPDATE users SET avatar_url=? WHERE uid=?", (avatar_path, user["uid"]))
                 conn.commit()
-                conn.close()
-                return redirect(url_for("profile"))
-
+                user = dict(user)
+                user["avatar_url"] = avatar_path
         elif "delete_avatar" in request.form:
             if user["avatar_url"]:
                 try:
-                    if user["avatar_url"].startswith("avatars/"):
-                        path = os.path.join("static", user["avatar_url"])
-                    else:
-                        path = user["avatar_url"]
-                    if os.path.exists(path):
-                        os.remove(path)
-                except Exception as e:
-                    print("Ошибка удаления аватарки:", e)
+                    os.remove(user["avatar_url"])
+                except Exception:
+                    pass
                 conn.execute("UPDATE users SET avatar_url=NULL WHERE uid=?", (user["uid"],))
                 conn.commit()
-                conn.close()
-                return redirect(url_for("profile"))
-
-        # ⚡️ активация ключа
-        elif "activation_key" in request.form:
-            code = request.form["activation_key"].replace(" ", "").upper()
-            keys_file = "database/keys.txt"
-            if os.path.exists(keys_file):
-                with open(keys_file, "r", encoding="utf-8") as f:
-                    keys = [k.strip() for k in f.readlines()]
-                found = None
-                for k in keys:
-                    if k.startswith(code + ","):
-                        found = k
-                        break
-                if found:
-                    _, value = found.split(",", 1)
-                    # -- forever case --
-                    if value == "forever":
-                        conn.execute("UPDATE users SET subscription_end='Навсегда' WHERE uid=?", (user["uid"],))
-                        conn.commit()
-                        flash(f"Ключ {code} активирован! Теперь у вас подписка НАВСЕГДА 🔥")
-
-                    # -- продление на X дней --
-                    else:
-                        try:
-                            days = int(value)
-                        except:
-                            days = 30
-
-                        # если у юзера уже есть подписка -> продлеваем
-                        old = user["subscription_end"]
-                        start_date = date.today()
-                        if old and old not in (None, "", "-", "Навсегда"):
-                            try:
-                                old_date = date.fromisoformat(old)
-                                if old_date > date.today():
-                                    start_date = old_date  # подписка ещё активна → прибавляем к старой дате
-                            except:
-                                pass
-                        new_end = (start_date + timedelta(days=days)).isoformat()
-
-                        conn.execute("UPDATE users SET subscription_end=? WHERE uid=?", (new_end, user["uid"]))
-                        conn.commit()
-                        flash(f"Ключ {code} активирован! Подписка продлена до {new_end}")
-
-                    # удалим использованный ключ
-                    with open(keys_file, "w", encoding="utf-8") as f:
-                        for line in keys:
-                            if line != found:
-                                f.write(line + "\n")
-                else:
-                    flash("Ключ недействителен или уже использован!")
-            else:
-                flash("Файл с ключами не найден!")
-
-    # рендер
-    if user["avatar_url"]:
-        if user["avatar_url"].startswith("avatars/"):
-            path = os.path.join("static", user["avatar_url"])
-        else:
-            path = user["avatar_url"]
-
-        if os.path.exists(path):
-            avatar_url = url_for('static', filename=user["avatar_url"]) if user["avatar_url"].startswith(
-                "avatars/") else user["avatar_url"]
-        else:
-            avatar_url = url_for('static', filename='icon.png')
-    else:
-        avatar_url = url_for('static', filename='icon.png')
-
-    conn.close()
+                user = dict(user)
+                user["avatar_url"] = None
+    avatar_url = user["avatar_url"] if user["avatar_url"] else url_for('static', filename='icon.png')
     return render(PROFILE_HTML, user={**user, "avatar_url": avatar_url})
 
 @app.route('/reset_hwid', methods=['POST'])
@@ -440,99 +294,56 @@ def admin():
     if session.get('role') != 'admin':
         return redirect('/')
     msg = ''
-    last_key = None
     conn = get_db()
-
     if request.method == 'POST':
-        act = request.form['action']
-
-        # --- создать ключ вручную ---
-        if act == 'createkey':
-            code = request.form['code'].upper().replace(" ", "")
-            duration = request.form.get("duration", "30")  # 30 или forever
-            version  = request.form.get("version", "main") # main или 1.21.4
-            with open("database/keys.txt", "a", encoding="utf-8") as f:
-                f.write(f"{code},{duration},{version}\n")
-            msg = f"Ключ {code} ({duration}, {version}) создан"
-            last_key = code
-
-        # --- удалить ключ ---
-        elif act == 'delkey':
-            code = request.form['code'].upper().replace(" ", "")
-            if os.path.exists("database/keys.txt"):
-                with open("database/keys.txt", "r", encoding="utf-8") as f:
+        act  = request.form['action']
+        if act == 'promo':
+            code = request.form['code'].upper()
+            days = request.form['days']
+            with open('database/promo_codes.txt', 'a', encoding='utf-8') as f:
+                f.write(f"{code},{days}\n")
+            msg = f"Промокод {code} создан"
+        elif act == 'delpromo':
+            code = request.form['code'].upper()
+            path = 'database/promo_codes.txt'
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
-                with open("database/keys.txt", "w", encoding="utf-8") as f:
+                with open(path, 'w', encoding='utf-8') as f:
                     for line in lines:
-                        if not line.startswith(code + ","):
+                        if not line.strip().startswith(code+','):
                             f.write(line)
-                msg = f"Ключ {code} удалён"
+                msg = f"Промокод {code} удалён"
             else:
-                msg = "Файл keys.txt не найден"
-
-        # --- генерация ключей для обычной версии ---
-        elif act == 'genkey30':
-            code = generate_key()
-            with open("database/keys.txt", "a", encoding="utf-8") as f:
-                f.write(f"{code},30,main\n")
-            msg = f"Сгенерирован {code} (30 дней, main)"
-            last_key = code
-
-        elif act == 'genkeyforever':
-            code = generate_key()
-            with open("database/keys.txt", "a", encoding="utf-8") as f:
-                f.write(f"{code},forever,main\n")
-            msg = f"Сгенерирован {code} (Навсегда, main)"
-            last_key = code
-
-        # --- генерация ключей для BETA 1.21.4 ---
-        elif act == 'genkey30_beta':
-            code = generate_key()
-            with open("database/keys.txt", "a", encoding="utf-8") as f:
-                f.write(f"{code},30,1.21.4\n")
-            msg = f"Сгенерирован {code} (30 дней, BETA 1.21.4)"
-            last_key = code
-
-        elif act == 'genkeyforever_beta':
-            code = generate_key()
-            with open("database/keys.txt", "a", encoding="utf-8") as f:
-                f.write(f"{code},forever,1.21.4\n")
-            msg = f"Сгенерирован {code} (Навсегда, BETA 1.21.4)"
-            last_key = code
-
-        # --- ручная выдача подписки через админку ---
-        elif act == 'sub_main':  # вручную продлить обычную подписку
-            uid = request.form['uid']
+                msg = "Файл промокодов не найден"
+        elif act == 'sub':
+            uid  = request.form['uid']
             days = int(request.form['days'])
-            end = calc_end(days)
+            end  = calc_end(days)
             conn.execute("UPDATE users SET subscription_end=? WHERE uid=?", (end, uid))
-            conn.commit()
-            msg = f"UID {uid} (основная) продлён до {end}"
-
-        elif act == 'forever_main':
+            conn.commit(); msg = f"UID {uid} продлён до {end}"
+        elif act == 'forever':
             uid = request.form['uid']
             conn.execute("UPDATE users SET subscription_end='Навсегда' WHERE uid=?", (uid,))
-            conn.commit()
-            msg = f"UID {uid} (основная) теперь Навсегда"
-
-        elif act == 'sub_beta':
+            conn.commit(); msg = f"UID {uid} подписка навсегда"
+        elif act == 'delsub':
             uid = request.form['uid']
-            days = int(request.form['days'])
-            end = calc_end(days)
-            conn.execute("UPDATE users SET beta_subscription_end=? WHERE uid=?", (end, uid))
-            conn.commit()
-            msg = f"UID {uid} (BETA 1.21.4) продлён до {end}"
-
-        elif act == 'forever_beta':
+            conn.execute("UPDATE users SET subscription_end='' WHERE uid=?", (uid,))
+            conn.commit(); msg = f"UID {uid} подписка удалена"
+        elif act == 'hwid':
             uid = request.form['uid']
-            conn.execute("UPDATE users SET beta_subscription_end='Навсегда' WHERE uid=?", (uid,))
-            conn.commit()
-            msg = f"UID {uid} (BETA 1.21.4) теперь Навсегда"
-
-    # список всех пользователей
-    users = conn.execute(
-        "SELECT username,email,uid,hwid,subscription_end,beta_subscription_end,role,banned,password FROM users"
-    ).fetchall()
+            conn.execute("UPDATE users SET hwid='' WHERE uid=?", (uid,))
+            conn.commit(); msg = f"HWID UID {uid} очищен"
+        elif act == 'block':
+            uid = request.form['uid']
+            conn.execute("UPDATE users SET banned=1 WHERE uid=?", (uid,))
+            conn.commit(); msg = f"UID {uid} заблокирован"
+        elif act == 'unban':
+            uid = request.form['uid']
+            conn.execute("UPDATE users SET banned=0 WHERE uid=?", (uid,))
+            conn.commit(); msg = f"UID {uid} разбанен"
+    # Получаем всех пользователей для таблицы
+    users = conn.execute("SELECT username, email, uid, hwid, subscription_end, role, banned, password FROM users").fetchall()
     conn.close()
 
     return render("""
@@ -573,41 +384,6 @@ def admin():
     <div class="admin-container">
       <h1>Админ-панель</h1>
       {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
-      
-<form method=post>
-  <div class="section-title">Сгенерировать ключ</div>
-  <button class=btn name=action value=genkey30>Сгенерировать (30 дней)</button>
-  <button class=btn name=action value=genkeyforever>Сгенерировать (Навсегда)</button>
-</form>
-
-<hr>
-<form method="post">
-  <h3>Создать ключ вручную</h3>
-  <input name="code" placeholder="Ключ (16 символов)" required>
-  <select name="duration">
-    <option value="30">30 дней</option>
-    <option value="forever">Навсегда</option>
-  </select>
-  <select name="version">
-    <option value="main">Обычная</option>
-    <option value="1.21.4">BETA 1.21.4</option>
-  </select>
-  <button name="action" value="createkey">Создать</button>
-</form>
-
-<form method="post">
-  <h3>Сгенерировать ключ для BETA 1.21.4</h3>
-  <button name="action" value="genkey30_beta">BETA 1.21.4 (30 дней)</button>
-  <button name="action" value="genkeyforever_beta">BETA 1.21.4 (Навсегда)</button>
-</form>
-
-<form method=post>
-  <div class="section-title">Удалить ключ</div>
-  <label>Ключ</label>
-  <input name=code required>
-  <button class=btn name=action value=delkey>Удалить</button>
-</form>
-<hr>
 
       <form method=post>
         <div class="section-title">Создать промокод</div>
