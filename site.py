@@ -90,12 +90,12 @@ h1{margin:90px 0 60px;text-align:center;font-size:3rem;font-weight:800}
 .card{width:236px;padding:24px;border:1px solid var(--border);border-radius:18px;
   background:var(--card);text-align:center;transition:.25s}
 .card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
-.card.beta{background:#2b281e;border:1px solid #6b5f2a}
-.card.beta h2{color:#f1e6a8}
-.card.beta .price{color:#d6c97a}
-.card.beta:hover{box-shadow:0 10px 28px rgba(255,214,96,.25),0 0 14px rgba(255,214,96,.35)}
-.card.beta .btn{background:linear-gradient(120deg,#6b5f2a 0%,#9a8f3d 50%,#6b5f2a 100%);color:#1b1a15;border:none}
-.card.beta .btn:hover{filter:none;transform:translateY(-2px);box-shadow:0 8px 22px rgba(255,214,96,.25),0 0 10px rgba(255,214,96,.35)}
+.card.beta{background:#2b281e !important;border:1px solid #6b5f2a !important}
+.card.beta h2{color:#f1e6a8 !important}
+.card.beta .price{color:#d6c97a !important}
+.card.beta:hover{box-shadow:0 10px 28px rgba(255,214,96,.25),0 0 14px rgba(255,214,96,.35) !important}
+.card.beta .btn{background:linear-gradient(120deg,#6b5f2a 0%,#9a8f3d 50%,#6b5f2a 100%) !important;color:#1b1a15 !important;border:none !important}
+.card.beta .btn:hover{filter:none !important;transform:translateY(-2px) !important;box-shadow:0 8px 22px rgba(255,214,96,.25),0 0 10px rgba(255,214,96,.35) !important}
 .card h2{margin-bottom:10px;font-size:1.35rem}
 .price{color:var(--muted);margin-bottom:22px;font-weight:700}
 .section-title{margin:60px 0 40px;font-size:1.8rem;text-align:center;font-weight:700}
