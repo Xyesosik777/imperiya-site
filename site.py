@@ -132,9 +132,9 @@ footer{
 }
 /* 🌟 Стиль для BETA карточек */
 .card.beta-card {
-  border: 1px solid #facc15;      /* жёлтая граница */
+  border: 1px solid #facc15;      /* жёлтая рамка */
   box-shadow: 0 0 6px #facc15cc;  /* мягкий жёлтый неон */
-  background: #2b2b20;            /* слегка тёмно‑жёлтая подложка */
+  background: #2b2b20;            /* слегка жёлтоватая подложка */
 }
 .card.beta-card:hover {
   transform: translateY(-6px) scale(1.02);
@@ -166,7 +166,7 @@ footer{
 
 <!-- Обычные продукты -->
 <div class="shop">
-{% for p in products if 'BETA' not in p.name %}
+{% for p in products %}
   <div class="card">
     <h2>{{ p.name }}</h2>
     <p class="price">{{ p.price }}</p>
@@ -180,27 +180,19 @@ footer{
 </div>
 
 <!-- BETA секция -->
-<h2 class="section-title" style="color:#facc15;text-shadow:0 0 6px #facc15cc;"></h2>
+<h2 class="section-title" style="color:#facc15;text-shadow:0 0 6px #facc15cc;">🔰 BETA 1.21.4</h2>
 <div class="shop">
+{% for p in products_beta %}
   <div class="card beta-card">
-    <h2>BETA 1.21.4 1 мес.</h2>
-    <p class="price">799₽</p>
+    <h2>{{ p.name }}</h2>
+    <p class="price">{{ p.price }}</p>
     {% if not session.get('user') %}
       <button class="btn" onclick="window.location.href='{{ url_for('register') }}'">Купить</button>
     {% else %}
-      <button class="btn" onclick="openModal('BETA 1.21.4 1 мес.','799₽')">Купить</button>
+      <button class="btn" onclick="openModal('{{ p.name }}','{{ p.price }}')">Купить</button>
     {% endif %}
   </div>
-
-  <div class="card beta-card">
-    <h2>BETA 1.21.4 Навсегда</h2>
-    <p class="price">1199₽</p>
-    {% if not session.get('user') %}
-      <button class="btn" onclick="window.location.href='{{ url_for('register') }}'">Купить</button>
-    {% else %}
-      <button class="btn" onclick="openModal('BETA 1.21.4 Навсегда','1199₽')">Купить</button>
-    {% endif %}
-  </div>
+{% endfor %}
 </div>
 
 <!-- блок преимуществ -->
@@ -243,7 +235,7 @@ addEventListener('scroll',onScroll);addEventListener('load',onScroll);
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 </script>
 </body></html>
-""", products=products, general_features=general_features)
+""", products=products, products_beta=products_beta, general_features=general_features)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
