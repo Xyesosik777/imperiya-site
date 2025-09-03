@@ -113,19 +113,6 @@ footer{
   margin:60px 0 18px 0;
   background:transparent;
 }
-<<<<<<< HEAD
-=======
-/* 🌟 Стиль для BETA карточек */
-.card.beta-card {
-  border: 1px solid #facc15;      /* жёлтая рамка */
-  box-shadow: 0 0 6px #facc15cc;  /* мягкий жёлтый неон */
-  background: #2b2b20;            /* слегка жёлтоватая подложка */
-}
-.card.beta-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 0 15px #facc15, 0 0 30px #facc15aa;
-}
->>>>>>> 5269fd6b6c86122fd70d8590de8a6d67eddba44a
 #ov{display:none;position:fixed;inset:0;background:#0008;backdrop-filter:blur(3px);z-index:1000}
 #mdl{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);
   background:var(--card);border:1px solid var(--border);border-radius:18px;
@@ -152,12 +139,8 @@ footer{
 
 <div class="shop">
 {% for p in products %}
-<<<<<<< HEAD
   {% if loop.index == 4 %}<div style="flex-basis:100%;height:0"></div>{% endif %}
   <div class="card {{ 'beta' if 'BETA' in p.name or 'Beta' in p.name else '' }}">
-=======
-  <div class="card">
->>>>>>> 5269fd6b6c86122fd70d8590de8a6d67eddba44a
     <h2>{{ p.name }}</h2>
     <p class="price">{{ p.price }}</p>
     {% if not session.get('user') %}
@@ -169,27 +152,7 @@ footer{
 {% endfor %}
 </div>
 
-<<<<<<< HEAD
 <!-- Блок преимуществ и заголовок — перед футером -->
-=======
-<!-- BETA секция -->
-<h2 class="section-title" style="color:#facc15;text-shadow:0 0 6px #facc15cc;">🔰 BETA 1.21.4</h2>
-<div class="shop">
-{% for p in products_beta %}
-  <div class="card beta-card">
-    <h2>{{ p.name }}</h2>
-    <p class="price">{{ p.price }}</p>
-    {% if not session.get('user') %}
-      <button class="btn" onclick="window.location.href='{{ url_for('register') }}'">Купить</button>
-    {% else %}
-      <button class="btn" onclick="openModal('{{ p.name }}','{{ p.price }}')">Купить</button>
-    {% endif %}
-  </div>
-{% endfor %}
-</div>
-
-<!-- блок преимуществ -->
->>>>>>> 5269fd6b6c86122fd70d8590de8a6d67eddba44a
 <h2 class="section-title" style="margin-top:60px;">Почему стоит купить именно наш клиент?</h2>
 <div class="features">
 {% for f in general_features %}
@@ -229,7 +192,7 @@ addEventListener('scroll',onScroll);addEventListener('load',onScroll);
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 </script>
 </body></html>
-""", products=products, products_beta=products_beta, general_features=general_features)
+""", products=products, general_features=general_features)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
